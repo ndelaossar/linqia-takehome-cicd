@@ -49,10 +49,10 @@ This workflow is the core of our quality assurance process. It lints, tests, and
       - **Responsibility:** Executes the automated test suite using pytest.
       - **Strategy:** It runs in a matrix across multiple Python versions (`3.10`, `3.11`, `3.12`) to ensure backward compatibility.
 
-  - `Artifacts`:
-    - **Test Results:** An XML report (`test-results.xml`) is generated for each Python version.
-    - **Coverage Report:** An HTML coverage report (`htmlcov/`) is generated to show which parts of the code are covered by tests. Both are uploaded as artifacts for review.
-    - **Output:** The total code coverage percentage is extracted and passed as a job output.
+  - `test`:
+    - **Responsibility:** Executes the automated test suite with pytest, calculates code coverage, and `posts a report as a comment on the Pull Request`.
+    - **Strategy:** It runs in a matrix across multiple Python versions (3.10, 3.11, 3.12) to ensure compatibility.
+    - **PR Feedback**: Each job in the matrix posts its own comment on the PR with the coverage percentage for its specific Python version. The script also updates existing comments to avoid spam on subsequent commits.
 
   - `build-and-push`:
     - **Responsibility:** Builds the application into a Docker image and pushes it to Docker Hub.

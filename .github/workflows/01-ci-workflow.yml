@@ -57,9 +57,8 @@ jobs:
 
   test:
     needs: lint
+    name: Test on Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
-    outputs:
-      coverage: ${{ steps.coverage_check.outputs.percentage }}
     strategy:
       fail-fast: false
       matrix:
@@ -81,29 +80,58 @@ jobs:
         # if requirements.txt exists, install it
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     
-    - name: Run tests with coverage
-      run: pytest ${{ inputs.test_folder }} --cov=${{ inputs.app_folder }} --cov-report=html --junitxml=test-results.xml
+    - name: Run tests and generate coverage report
+      run: pytest ${{ inputs.test_folder }} --cov=${{ inputs.app_folder }} --cov-report=xml # Genera un reporte XML, más fácil de leer
 
     - name: Extract coverage percentage
-      id: coverage_check
+      id: coverage
       run: |
-          PERCENTAGE=$(grep -o 'TOTAL.*' coverage/index.html | sed -e 's/<[^>]*>//g' | awk '{print $NF}')
-          echo "percentage=$PERCENTAGE" >> $GITHUB_OUTPUT
-    
-    # Siempre se ejecuta para subir el reporte, incluso si las pruebas fallan
-    - name: Upload test results
-      if: always()
-      uses: actions/upload-artifact@v4
+        # extract line-rate from coverage.xml and convert to percentage
+        COVERAGE_RATE=$(python -c "from xml.etree import ElementTree as ET; print(ET.parse('coverage.xml').getroot().get('line-rate'))")
+        COVERAGE_PERCENTAGE=$(printf "%.2f%%" "$(echo "$COVERAGE_RATE * 100" | bc)")
+        echo "percentage=${COVERAGE_PERCENTAGE}" >> $GITHUB_OUTPUT
+
+    - name: Create Test Report Comment
+      # only runs if the workflow was triggered by a PR and the input validate_pr is true
+      if: ${{ inputs.validate_pr }}
+      uses: actions/github-script@v7
       with:
-        name: test-results-${{ matrix.python-version }} # Se añade la versión para diferenciar artefactos
-        path: test-results.xml
-          
-    - name: Upload coverage report
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: coverage-report-${{ matrix.python-version }} # Se añade la versión para diferenciar artefactos
-        path: htmlcov/
+        script: |
+          const pythonVersion = "${{ matrix.python-version }}";
+          const coverage = "${{ steps.coverage.outputs.percentage }}";
+          const runLink = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+          const header = `### Test Report (Python ${pythonVersion}) 🐍`;
+
+          const body = `
+          ${header}
+          - **Coverage:** \`${coverage}\`
+          - **Artifacts:** Download detailed reports from the [workflow run summary](${runLink}).
+          `;
+
+          // to prevent spamming the PR with comments, we check if a comment with the same header already exists
+          const { data: comments } = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+          });
+
+          const existingComment = comments.find(comment => comment.body.includes(header));
+
+          if (existingComment) {
+            github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: existingComment.id,
+              body: body
+            });
+          } else {
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body
+            });
+          }
   
   # Can run in a diferent workflow
   build-and-push:
@@ -147,44 +175,4 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-  # only run this job for pull requests to avoid duplicate comments on main branch pushes
-  post-pr-comment:
-    name: Post Pull Request Comment
-    needs: [test, build-and-push]
-    runs-on: ubuntu-latest
-    if: ${{ inputs.validate_pr }}
-    permissions:
-      pull-requests: write # Permission to create PR comments
-    steps:
-      - name: Create PR Comment
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const coverage = "${{ needs.test.outputs.coverage }}";
-            const imageTags = "${{ needs.build-and-push.outputs.image_tags }}".split(',').map(tag => `\`${tag.trim()}\``).join('<br>');
-            const dockerRepo = "pinoched/liquia_cicd";
-            const dockerLink = `https://hub.docker.com/r/${dockerRepo}/tags`;
-            const runLink = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-
-            const body = `
-            ### CI/CD Report 🚀
-
-            Docker image has been built and pushed successfully.
-            - **Image Tags:** <br>${imageTags}
-            - **Docker Hub Link:** [${dockerRepo}](${dockerLink})
-
-            ---
-
-            ### Test & Coverage ✅
-
-            - **Coverage:** \`${coverage}\`
-            - **Artifacts:** Detailed test and coverage reports have been uploaded. You can download them from the [workflow run summary](${runLink}).
-
-            `;
-
-            github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: body
-            });
+  

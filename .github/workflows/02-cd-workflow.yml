@@ -47,13 +47,22 @@ jobs:
 
       - name: Pull Docker Image from Registry
         run: docker pull ${{ steps.docker_meta.outputs.tag }}
+      
+      - name: generate two random numbers
+        id: random_numbers
+        run: |
+          # Generate two random numbers between 1 and 100
+          NUM1=$((RANDOM % 100 + 1))
+          NUM2=$((RANDOM % 100 + 1))
+          echo "num1=$NUM1" >> $GITHUB_OUTPUT
+          echo "num2=$NUM2" >> $GITHUB_OUTPUT
 
       - name: 🎭 Mock Deployment by Running the Image
         id: mock_deployment
         run: |
           # Run the image and capture the output
-          docker run --rm ${{ steps.docker_meta.outputs.tag }} 20 15
-
+          docker run --rm ${{ steps.docker_meta.outputs.tag }} ${{ steps.random_numbers.outputs.num1 }} ${{ steps.random_numbers.outputs.num2 }}
+          
       - name: Post Deployment Success Comment
         if: success()
         uses: actions/github-script@v7
