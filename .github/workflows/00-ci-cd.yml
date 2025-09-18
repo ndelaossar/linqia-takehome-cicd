@@ -7,7 +7,7 @@ on:
     types: [opened, synchronize, reopened]
     branches:
       - main
-# Evitar corridas concurrentes del workflow en la misma rama
+# Avoid multiple concurrent runs for the same branch
 concurrency:
   group: ${{ github.ref_name }}-ci-cd-deployment
   cancel-in-progress: true
@@ -22,28 +22,22 @@ jobs:
       - name: Set SHA short
         id: set_sha
         run: echo "sha=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
-  validate_pr:
-    name: Validate if it's a Pull Request
-    runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'pull_request' }}
-    outputs:
-      is_pr: ${{ steps.check_pr.outputs.is_pr }}
-    steps:
-      - name: Check if event is a pull request
-        id: check_pr
-        run: if [ "${{ github.event_name }}" == "pull_request" ]; then echo "is_pr=true" >> $GITHUB_OUTPUT; else echo "is_pr=false" >> $GITHUB_OUTPUT; fi
   
   ci:
     name: Continuous Integration
+    needs: get_sha 
     uses: ./.github/workflows/01-ci-workflow.yml
     with:
-      github_sha: ${{ jobs.get_sha.outputs.sha }}
-      validate_pr: ${{ jobs.validate_pr.outputs.is_pr }}
+      # use the sha obtained in the previous job
+      github_sha: ${{ needs.get_sha.outputs.sha }}
+      # validate only if it's a PR
+      validate_pr: ${{ github.event_name == 'pull_request' }}
   
   cd:
     name: Continuous Deployment
-    needs: ci
-    if : ${{ needs.ci.result == 'success' }}
+    needs: [ci, get_sha]
+    if: ${{ needs.ci.result == 'success' }}
     uses: ./.github/workflows/02-cd-workflow.yml
     with:
-      github_sha: ${{ jobs.get_sha.outputs.sha }}
+      # use the sha obtained in the previous job
+      github_sha: ${{ needs.get_sha.outputs.sha }}
