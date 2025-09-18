@@ -52,7 +52,7 @@ jobs:
         id: mock_deployment
         run: |
           # Run the image and capture the output
-          docker run ${{ steps.docker_meta.outputs.tag }}
+          docker run --rm ${{ steps.docker_meta.outputs.tag }} 20 15
 
       - name: Post Deployment Success Comment
         if: success()
@@ -65,7 +65,7 @@ jobs:
             github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: pr_number,
+              issue_number: ${{ github.event.pull_request.number || github.event.issue.number }},
               body: `
               ### ✅ Deployment Succeeded
 
@@ -86,7 +86,7 @@ jobs:
             github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: pr_number,
+              issue_number: ${{ github.event.pull_request.number || github.event.issue.number }},
               body: `
               ### ❌ Deployment Failed
 
