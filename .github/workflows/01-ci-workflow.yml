@@ -21,7 +21,14 @@ on:
         default: false
         description: "Whether to validate if the workflow was triggered by a PR"
         required: true
-
+    secrets:
+      DOCKERHUB_USERNAME:
+        description: "Docker Hub username"
+        required: true
+      DOCKERHUB_TOKEN:
+        description: "Docker Hub access token"
+        required: true
+     
 jobs:
   # note: Lint and Test jobs can be run in diferents workflows to speed up the process 
   # however for simplicity they are in the same workflow here

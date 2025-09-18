@@ -32,6 +32,10 @@ jobs:
       github_sha: ${{ needs.get_sha.outputs.sha }}
       # validate only if it's a PR
       validate_pr: ${{ github.event_name == 'pull_request' }}
+    secrets:
+      # pass down the secrets to the called workflow
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
   
   cd:
     name: Continuous Deployment
@@ -41,3 +45,7 @@ jobs:
     with:
       # use the sha obtained in the previous job
       github_sha: ${{ needs.get_sha.outputs.sha }}
+    secrets:
+      # pass down the secrets to the called workflow
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}

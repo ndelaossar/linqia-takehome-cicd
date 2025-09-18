@@ -16,6 +16,13 @@ on:
         type: string
         default: "tests"
         description: "The folder where the tests are located"
+    secrets:
+      DOCKERHUB_USERNAME:
+        description: "Docker Hub username"
+        required: true
+      DOCKERHUB_TOKEN:
+        description: "Docker Hub access token"
+        required: true
 
 jobs:
   deploy:
