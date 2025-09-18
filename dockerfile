@@ -7,8 +7,8 @@ WORKDIR /app
 # copy the requirements file to the working directory
 COPY requirements.txt .
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Install Python dependencies if requirements.txt exists and is not empty
+RUN if [ -s requirements.txt ]; then pip install --no-cache-dir -r requirements.txt; fi
 
 # Copy the application code (the entire sample_app folder) to the working directory /app
 # This way, sample_app/ will be a subdirectory of /app/
