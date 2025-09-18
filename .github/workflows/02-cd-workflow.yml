@@ -43,7 +43,7 @@ jobs:
         run: |
           # The image was tagged with the short SHA of the triggering commit
           SHA=${{ inputs.github_sha }}
-          echo "tag=pinoched/liquia_cicd:${SHA}" >> $GITHUB_OUTPUT
+          echo "tag=${{ secrets.DOCKERHUB_USERNAME }}/liquia_cicd:sha-${SHA}" >> $GITHUB_OUTPUT
 
       - name: Pull Docker Image from Registry
         run: docker pull ${{ steps.docker_meta.outputs.tag }}
