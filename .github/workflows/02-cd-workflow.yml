@@ -16,17 +16,10 @@ on:
         type: string
         default: "tests"
         description: "The folder where the tests are located"
-      validate_pr:
-        type: boolean
-        default: false
-        description: "Whether to validate if the workflow was triggered by a PR"
-        required: true
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    # Run only if triggered by a PR and 'validate_pr' is true
-    if: ${{ inputs.validate_pr == true }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

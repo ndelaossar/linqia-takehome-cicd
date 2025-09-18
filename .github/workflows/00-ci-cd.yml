@@ -36,7 +36,7 @@ jobs:
   cd:
     name: Continuous Deployment
     needs: [ci, get_sha]
-    if: ${{ needs.ci.result == 'success' }}
+    if: ${{ needs.ci.result == 'success' && (github.event_name == 'pull_request') }}
     uses: ./.github/workflows/02-cd-workflow.yml
     with:
       # use the sha obtained in the previous job
