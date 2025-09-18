@@ -1,0 +1,47 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+# Evitar corridas concurrentes del workflow en la misma rama
+concurrency:
+  group: ${{ github.ref_name }}-ci-cd-deployment
+  cancel-in-progress: true
+jobs:
+  get_sha:
+    name: Get Commit SHA
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.set_sha.outputs.sha }}
+    steps:
+      - name: Set SHA short
+        id: set_sha
+        run: echo "sha=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+  validate_pr:
+    name: Validate Pull Request
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' }}
+    outputs:
+      is_pr: ${{ steps.check_pr.outputs.is_pr }}
+    steps:
+      - name: Check if event is a pull request
+        id: check_pr
+        run: if [ "${{ github.event_name }}" == "pull_request" ]; then echo "is_pr=true" >> $GITHUB_OUTPUT; else echo "is_pr=false" >> $GITHUB_OUTPUT; fi
+  
+  ci:
+    uses: ./.github/workflows/01-ci-workflow.yml
+    with:
+      github_sha: ${{ jobs.get_sha.outputs.sha }}
+      validate_pr: ${{ jobs.validate_pr.outputs.is_pr }}
+  
+  cd:
+    needs: ci
+    if : ${{ needs.ci.result == 'success' }}
+    uses: ./.github/workflows/02-cd-workflow.yml
+    with:
+      github_sha: ${{ jobs.get_sha.outputs.sha }}
