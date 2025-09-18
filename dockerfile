@@ -6,10 +6,10 @@ WORKDIR /app
 
 # Copia primero el archivo de dependencias para aprovechar el caché de Docker
 # Si este archivo no cambia, Docker no reinstalará las dependencias en cada build
-COPY requirements.txt .
+#COPY requirements.txt .
 
 # Instala las dependencias de Python
-RUN if [ -s requirements.txt ]; then pip install --no-cache-dir -r requirements.txt; fi
+#RUN if [ -s requirements.txt ]; then pip install --no-cache-dir -r requirements.txt; fi
 
 # Copia el código de tu aplicación al directorio de trabajo
 COPY ./sample_app/* /app/
