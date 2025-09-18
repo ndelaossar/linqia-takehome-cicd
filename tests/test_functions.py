@@ -21,5 +21,5 @@ def test_add_zero():
 
 def test_package_imports():
     # Basic sanity check that package can be imported
-    pkg = importlib.import_module("app")
+    pkg = importlib.import_module("sample_app")
     assert hasattr(pkg, "__version__")
