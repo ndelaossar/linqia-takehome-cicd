@@ -60,7 +60,7 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     
     - name: Run tests with coverage
-      run: pytest test --cov=sample_app --cov-report=html --junitxml=test-results.xml
+      run: pytest tests --cov=sample_app --cov-report=html --junitxml=test-results.xml
     
     - name: Extract coverage percentage
       id: coverage_check
